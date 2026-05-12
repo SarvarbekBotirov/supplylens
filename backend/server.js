@@ -834,10 +834,49 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+function validateUrl(urlString) {
+  let parsed;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    return { valid: false, reason: 'Invalid URL format' };
+  }
+
+  // Only allow http and https
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    return { valid: false, reason: 'Only HTTP/HTTPS allowed' };
+  }
+
+  // Block private IP ranges and localhost
+  const hostname = parsed.hostname.toLowerCase();
+  const blocked = [
+    'localhost', '127.0.0.1', '0.0.0.0',
+    '::1', '169.254', '10.', '192.168.', '172.16.',
+    '172.17.', '172.18.', '172.19.', '172.20.',
+    '172.21.', '172.22.', '172.23.', '172.24.',
+    '172.25.', '172.26.', '172.27.', '172.28.',
+    '172.29.', '172.30.', '172.31.',
+    'metadata.google.internal',
+    '169.254.169.254'
+  ];
+  for (const b of blocked) {
+    if (hostname === b || hostname.startsWith(b)) {
+      return { valid: false, reason: 'Private/internal URLs not allowed' };
+    }
+  }
+
+  return { valid: true };
+}
+
 app.post('/api/analyze-url', async (req, res) => {
   try {
     const { url, industry } = req.body;
     if (!url) return res.status(400).json({ success: false, error: 'URL required' });
+
+    const urlCheck = validateUrl(url);
+    if (!urlCheck.valid) {
+      return res.status(400).json({ success: false, error: 'Invalid URL' });
+    }
 
     const articleRes = await axios.get(url, {
       headers: {
@@ -848,7 +887,8 @@ app.post('/api/analyze-url', async (req, res) => {
         'Connection': 'keep-alive',
       },
       timeout: 20000,
-      maxRedirects: 5
+      maxRedirects: 5,
+      maxContentLength: 5 * 1024 * 1024
     });
 
     const html = articleRes.data;
