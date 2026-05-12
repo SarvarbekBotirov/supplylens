@@ -23,3 +23,50 @@ export const fetchNewsByIndustry = async (industry) => {
   const data = await response.json();
   return data;
 };
+
+export const analyzeUrl = async (url, industry) => {
+  const response = await fetch('http://localhost:3000/api/analyze-url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, industry })
+  });
+  const data = await response.json();
+  return data;
+};
+
+export const analyzeArticleWithLens = async (article, industry) => {
+  const response = await fetch('http://localhost:3000/api/analyze-article', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ article, industry })
+  });
+  const data = await response.json();
+  return data;
+};
+
+export const refreshNews = async () => {
+  const response = await fetch('http://localhost:3000/api/refresh', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return response.json();
+};
+
+export const fetchHeadlines = async () => {
+  const response = await fetch(
+    'http://localhost:3000/api/headlines'
+  );
+  return response.json();
+};
+
+export const generateRiskReport = async (article, lens) => {
+  const response = await fetch(
+    'http://localhost:3000/api/risk-report',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article, lens })
+    }
+  );
+  return response.json();
+};

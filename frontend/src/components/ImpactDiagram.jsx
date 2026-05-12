@@ -10,11 +10,11 @@ function ImpactDiagram({ ripple }) {
   );
 
   const nH = 38, gap = 10;
-  const C = { trigger: '#1a2b4a', risk: '#ef4444', opportunity: '#22c55e' };
+  const C = { trigger: '#06b6d4', risk: '#ef4444', opportunity: '#10b981' };
   let nodes = '', lines = '';
 
   function getNodeWidth(label) {
-    return Math.max(120, (label || '').length * 8 + 32);
+    return Math.max(140, (label || '').length * 9 + 40);
   }
 
   const tW = getNodeWidth(ripple.trigger);
@@ -56,11 +56,11 @@ function ImpactDiagram({ ripple }) {
   ];
 
   const leg = [{c:C.trigger,l:'Trigger'},{c:C.risk,l:'Risk'},{c:C.opportunity,l:'Opportunity'}]
-    .map((l,i) => `<rect x="${20+i*150}" y="358" width="8" height="8" rx="2" fill="${l.c}" opacity="0.8"/><text x="${20+i*150+13}" y="366" fill="#64748b" font-size="10" font-family="Inter,sans-serif">${l.l}</text>`).join('');
+    .map((l,i) => `<rect x="${20+i*150}" y="358" width="8" height="8" rx="2" fill="${l.c}" opacity="0.8"/><text x="${20+i*150+13}" y="366" fill="#6b6b8a" font-size="10" font-family="Inter,sans-serif">${l.l}</text>`).join('');
 
   return (
     <div>
-      <svg width="100%" viewBox="0 0 750 385" style={{display:'block'}}>
+      <svg width="100%" viewBox="0 0 900 385" style={{display:'block', backgroundColor:'transparent'}}>
         <defs><marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
         <g dangerouslySetInnerHTML={{__html: lines + nodes + leg}}/>
       </svg>
@@ -69,9 +69,10 @@ function ImpactDiagram({ ripple }) {
         {allNodes.map((n, i) => (
           <button key={i} onClick={() => setSelectedNode(selectedNode?.label === n.label ? null : n)}
             style={{
-              padding: '3px 10px', borderRadius: '99px', border: `1px solid ${n.type === 'risk' ? '#fecaca' : '#bbf7d0'}`,
-              backgroundColor: selectedNode?.label === n.label ? (n.type === 'risk' ? '#fef2f2' : '#f0fdf4') : 'white',
-              color: n.type === 'risk' ? '#ef4444' : '#22c55e',
+              padding: '3px 10px', borderRadius: '99px',
+              border: `1px solid ${n.type === 'risk' ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+              backgroundColor: selectedNode?.label === n.label ? (n.type === 'risk' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)') : 'transparent',
+              color: n.type === 'risk' ? '#ef4444' : '#10b981',
               fontSize: '11px', cursor: 'pointer', fontWeight: '500'
             }}>
             {n.label}
@@ -83,16 +84,16 @@ function ImpactDiagram({ ripple }) {
         <div style={{
           marginTop: '12px',
           padding: '12px 16px',
-          backgroundColor: selectedNode.type === 'risk' ? '#fef2f2' : '#f0fdf4',
-          border: `1px solid ${selectedNode.type === 'risk' ? '#fecaca' : '#bbf7d0'}`,
+          backgroundColor: selectedNode.type === 'risk' ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+          border: `1px solid ${selectedNode.type === 'risk' ? '#ef4444' : '#10b981'}`,
           borderRadius: '8px',
           fontSize: '13px',
-          color: '#374151',
+          color: '#e8e8f0',
           lineHeight: '1.6'
         }}>
           <span style={{
             fontWeight: '600',
-            color: selectedNode.type === 'risk' ? '#ef4444' : '#22c55e',
+            color: selectedNode.type === 'risk' ? '#ef4444' : '#10b981',
             marginRight: '8px'
           }}>
             {selectedNode.row} order · {selectedNode.label}
