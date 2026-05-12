@@ -8,113 +8,12 @@ import { checkSupplierRisk } from '../services/api';
 import ImpactDiagram from '../components/ImpactDiagram';
 import GeoImpactMap from '../components/GeoImpactMap';
 import SupplierMonitor from '../components/SupplierMonitor';
+import SummaryPoint from '../components/SummaryPoint';
 import RiskOverlay from '../components/RiskOverlay';
 import '../styles/dashboard.css';
+import { LENS_OPTIONS, TAG_DOT, TAG_BADGE_DARK, RISK_STAGES, ANALYZER_STAGES } from '../constants/dashboard';
+import { getSourceName, getArticleAge, calculateRiskScore } from '../utils/articleHelpers';
 
-const LENS_OPTIONS = [
-  { value: 'General',            label: '👤 General Analyst' },
-  { value: 'Automotive',         label: '🚗 Automotive Manager' },
-  { value: 'Semiconductors',     label: '💾 Semiconductor Analyst' },
-  { value: 'Energy',             label: '⚡ Energy Procurement' },
-  { value: 'Electronics',        label: '📱 Electronics Buyer' },
-  { value: 'Retail',             label: '🛍️ Retail Buyer' },
-  { value: 'Pharma',             label: '💊 Pharma Supply Chain' },
-  { value: 'Food & Agriculture', label: '🌾 Food & Agriculture' },
-  { value: 'Procurement',        label: '🔧 Procurement Manager' },
-];
-
-const TAG_DOT = {
-  Disruption: '#ef4444',
-  Trade:      '#f59e0b',
-  Technology: '#3b82f6',
-  Economy:    '#8b5cf6',
-  default:    '#6b6b8a',
-};
-
-const TAG_BADGE_DARK = {
-  Disruption: { bg: 'rgba(239,68,68,0.12)',   color: '#ef4444' },
-  Trade:      { bg: 'rgba(245,158,11,0.12)',  color: '#f59e0b' },
-  Technology: { bg: 'rgba(59,130,246,0.12)',  color: '#3b82f6' },
-  Economy:    { bg: 'rgba(139,92,246,0.12)',  color: '#8b5cf6' },
-  default:    { bg: 'rgba(107,107,138,0.12)', color: '#6b6b8a' },
-};
-
-function SummaryPoint({ point, quote, index }) {
-  const [quoteOpen, setQuoteOpen] = useState(false);
-  const hasQuote = quote && quote !== 'No direct quote available';
-  return (
-    <div style={{
-      padding: '12px 0',
-      borderBottom: '1px solid #1e1e2e'
-    }}>
-      <div style={{
-        display: 'flex', gap: '10px',
-        alignItems: 'flex-start',
-        marginBottom: hasQuote ? '8px' : '0'
-      }}>
-        <span style={{
-          color: '#06b6d4', fontWeight: '700',
-          minWidth: '18px', fontSize: '13px'
-        }}>{index + 1}</span>
-        <span style={{
-          color: '#e8e8f0', fontSize: '13px',
-          lineHeight: '1.6', flex: 1
-        }}>{point}</span>
-        {hasQuote && (
-          <button
-            onClick={() => setQuoteOpen(!quoteOpen)}
-            style={{
-              background: quoteOpen
-                ? 'rgba(6,182,212,0.15)'
-                : 'transparent',
-              border: '1px solid rgba(6,182,212,0.3)',
-              color: '#06b6d4',
-              borderRadius: '4px',
-              padding: '2px 8px',
-              fontSize: '10px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              flexShrink: 0,
-              fontFamily: 'Inter, sans-serif',
-              transition: 'all 0.15s',
-            }}
-          >
-            {quoteOpen ? 'Hide source' : 'View source →'}
-          </button>
-        )}
-      </div>
-      {hasQuote && quoteOpen && (
-        <div style={{
-          marginLeft: '28px',
-          background: 'rgba(6,182,212,0.05)',
-          border: '1px solid rgba(6,182,212,0.15)',
-          borderLeft: '3px solid #06b6d4',
-          borderRadius: '0 6px 6px 0',
-          padding: '10px 14px',
-        }}>
-          <div style={{
-            fontSize: '10px', fontWeight: '700',
-            color: '#06b6d4', letterSpacing: '1px',
-            textTransform: 'uppercase',
-            marginBottom: '6px',
-            fontFamily: 'Inter, sans-serif',
-          }}>
-            Source Quote
-          </div>
-          <div style={{
-            fontSize: '12px',
-            color: '#a0a0b8',
-            lineHeight: '1.65',
-            fontStyle: 'italic',
-          }}>
-            "{quote}"
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -141,39 +40,6 @@ function Dashboard() {
   const [riskReportStage, setRiskReportStage] = useState(0);
   const [showRiskOverlay, setShowRiskOverlay] = useState(false);
 
-  const RISK_STAGES = [
-    { icon: '🔍', label: 'Reading article content...' },
-    { icon: '⚠️', label: 'Identifying 15 risk factors...' },
-    { icon: '📊', label: 'Scoring probability and impact...' },
-    { icon: '🎯', label: 'Building scenario plans...' },
-    { icon: '📋', label: 'Formatting executive report...' },
-  ];
-
-  const ANALYZER_STAGES = [
-    { icon: '🔍', label: 'Fetching article content...', duration: 2000 },
-    { icon: '⚡', label: 'Running AI supply chain analysis...', duration: 8000 },
-    { icon: '🌍', label: 'Mapping geographic impact...', duration: 2000 },
-  ];
-
-  const calculateRiskScore = (articles) => {
-    if (!articles || articles.length === 0) return null;
-    const validArticles = articles.filter(a => a.sc_relevance_score > 0);
-    if (validArticles.length === 0) return null;
-    const avgScore = validArticles.reduce((sum, a) => sum + a.sc_relevance_score, 0) / validArticles.length;
-    const disruptionCount = validArticles.filter(a => a.tag?.includes('Disruption')).length;
-    const disruptionBoost = (disruptionCount / validArticles.length) * 2;
-    const rawScore = Math.min(10, ((avgScore / 5) * 8) + disruptionBoost);
-    return {
-      score: rawScore.toFixed(1),
-      level: rawScore >= 7 ? 'HIGH' : rawScore >= 4 ? 'MEDIUM' : 'LOW',
-      color: rawScore >= 7 ? '#ef4444' : rawScore >= 4 ? '#f59e0b' : '#10b981',
-      topRisks: validArticles
-        .filter(a => a.sc_relevance_score >= 4)
-        .sort((a, b) => b.sc_relevance_score - a.sc_relevance_score)
-        .slice(0, 3)
-        .map(a => ({ title: a.title, tag: a.tag, score: a.sc_relevance_score })),
-    };
-  };
 
   useEffect(() => {
     if (news.length > 0) setRiskData(calculateRiskScore(news));
@@ -328,35 +194,6 @@ function Dashboard() {
   const isActive = (article) => selectedArticle?.title === article.title;
   const activeArticle = analyzerMode && analyzerResult ? analyzerResult : selectedArticle;
 
-  const getSourceName = (link) => {
-    try {
-      const host = new URL(link).hostname.replace('www.', '');
-      const sourceMap = {
-        'supplychaindive.com': 'Supply Chain Dive',
-        'supplychainbrain.com': 'SC Brain',
-        'freightwaves.com': 'FreightWaves',
-        'globaltrademag.com': 'Global Trade Mag',
-        'nytimes.com': 'NY Times',
-        'bbc.co.uk': 'BBC',
-        'reuters.com': 'Reuters',
-        'wired.com': 'Wired',
-        'ft.com': 'Financial Times',
-        'bloomberg.com': 'Bloomberg',
-        'dcvelocity.com': 'DC Velocity',
-        'inboundlogistics.com': 'Inbound Logistics',
-      };
-      return sourceMap[host] || host;
-    } catch {
-      return 'News';
-    }
-  };
-
-  const getArticleAge = (pubDate) => {
-    if (!pubDate) return null;
-    const hours = Math.round((Date.now() - new Date(pubDate)) / 3600000);
-    if (hours < 48) return null;
-    return Math.floor(hours / 24);
-  };
 
   /* ── derived stats for empty state ── */
   const validNews    = news.filter(a => a.sc_relevance_score > 0);
