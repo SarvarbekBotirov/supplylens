@@ -4,8 +4,12 @@ import { fetchNews, analyzeUrl, analyzeArticleWithLens, refreshNews, generateRis
 import { exportArticlePDF } from '../services/pdfExport';
 import { openRiskReportPreview } from '../services/riskReportPDF';
 import { fetchCommodities } from '../services/api';
+import { checkSupplierRisk } from '../services/api';
 import ImpactDiagram from '../components/ImpactDiagram';
 import GeoImpactMap from '../components/GeoImpactMap';
+import SupplierMonitor from '../components/SupplierMonitor';
+import RiskOverlay from '../components/RiskOverlay';
+import '../styles/dashboard.css';
 
 const LENS_OPTIONS = [
   { value: 'General',            label: '👤 General Analyst' },
@@ -372,183 +376,7 @@ function Dashboard() {
 
   return (
     <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: #0d0d14; color: #e8e8f0; }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #0d0d14; }
-        ::-webkit-scrollbar-thumb { background: #1e1e2e; border-radius: 3px; }
 
-        /* NAVBAR */
-        .db-nav {
-          display: flex; align-items: center; justify-content: space-between;
-          padding: 0 24px; height: 56px;
-          background: #0d0d14; border-bottom: 1px solid #1e1e2e;
-          position: sticky; top: 0; z-index: 100;
-        }
-        .db-nav-left { display: flex; align-items: center; gap: 8px; }
-        .db-nav-logo { font-size: 18px; font-weight: 700; color: #e8e8f0; letter-spacing: -0.3px; }
-        .db-nav-badge {
-          background: #06b6d4; color: #0d0d14;
-          font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 4px;
-        }
-        .db-home-btn {
-          background: transparent; color: #6b6b8a;
-          border: 1px solid #1e1e2e; border-radius: 8px;
-          padding: 6px 14px; font-size: 13px; font-weight: 500;
-          font-family: 'Inter', sans-serif; cursor: pointer; transition: all 0.15s;
-        }
-        .db-home-btn:hover { border-color: #06b6d4; color: #e8e8f0; }
-
-        /* URL BAR */
-        .db-url-bar {
-          display: flex; align-items: center; gap: 8px;
-          padding: 10px 24px; background: #13131f;
-          border-bottom: 1px solid #1e1e2e;
-        }
-        .db-url-icon { font-size: 14px; flex-shrink: 0; }
-        .db-url-input {
-          flex: 1; padding: 7px 12px;
-          background: #0d0d14; border: 1px solid #1e1e2e; border-radius: 8px;
-          font-size: 13px; font-family: 'Inter', sans-serif;
-          color: #e8e8f0; outline: none; transition: border-color 0.15s;
-        }
-        .db-url-input::placeholder { color: #6b6b8a; }
-        .db-url-input:focus { border-color: #06b6d4; }
-        .db-url-btn {
-          padding: 7px 16px; background: #06b6d4; color: #0d0d14;
-          border: none; border-radius: 8px;
-          font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif;
-          cursor: pointer; white-space: nowrap; transition: opacity 0.15s;
-        }
-        .db-url-btn:hover:not(:disabled) { opacity: 0.85; }
-        .db-url-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .db-url-err { font-size: 12px; color: #ef4444; white-space: nowrap; }
-
-        /* LAYOUT */
-        .db-body { display: flex; height: calc(100vh - 168px); }
-
-        /* LEFT PANEL */
-        .db-left {
-          width: 280px; min-width: 280px;
-          background: #13131f; border-right: 1px solid #1e1e2e;
-          overflow-y: auto; display: flex; flex-direction: column;
-        }
-        .db-left-header {
-          padding: 12px 16px; border-bottom: 1px solid #1e1e2e;
-          display: flex; align-items: center; justify-content: space-between;
-          flex-shrink: 0;
-        }
-        .db-left-title { font-size: 13px; font-weight: 600; color: #e8e8f0; }
-        .db-left-right  { display: flex; align-items: center; gap: 8px; }
-        .db-left-count { font-size: 12px; color: #6b6b8a; }
-        .db-refresh-btn {
-          width: 28px; height: 28px; border-radius: 50%;
-          background: transparent; border: 1px solid #1e1e2e;
-          color: #6b6b8a; font-size: 13px; cursor: pointer;
-          display: flex; align-items: center; justify-content: center;
-          transition: all 0.15s; flex-shrink: 0;
-        }
-        .db-refresh-btn:hover { border-color: #06b6d4; color: #06b6d4; }
-
-        .db-error { padding: 16px; font-size: 13px; color: #ef4444; }
-
-        /* ARTICLE CARDS */
-        .db-card {
-          padding: 12px 16px; border-bottom: 1px solid #1e1e2e;
-          cursor: pointer; transition: background 0.12s;
-          border-left: 2px solid transparent; background: #13131f;
-        }
-        .db-card:hover   { background: #1a1a2e; }
-        .db-card-active  { background: #0d1a1f !important; border-left-color: #06b6d4; }
-        .db-card-top     { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-        .db-tag-dot      { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .db-tag-label    { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
-        .db-card-title   { font-size: 13px; font-weight: 500; color: #e8e8f0; line-height: 1.4; margin-bottom: 6px; }
-        .db-card-meta    { font-size: 11px; color: #6b6b8a; margin-bottom: 8px; }
-        .db-progress-wrap { width: 100%; height: 3px; background: #1e1e2e; border-radius: 99px; overflow: hidden; }
-        .db-progress-fill { height: 100%; background: #06b6d4; border-radius: 99px; }
-
-        /* RIGHT PANEL */
-        .db-right { flex: 1; background: #0d0d14; overflow-y: auto; }
-
-        /* ARTICLE VIEW */
-        .db-article { padding: 24px 32px; max-width: 860px; }
-        .db-article-title { font-size: 22px; font-weight: 700; color: #e8e8f0; line-height: 1.3; margin-bottom: 12px; }
-        .db-meta-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-        .db-tag-pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
-        .db-relevance-pill {
-          font-size: 11px; color: #6b6b8a; padding: 3px 10px;
-          border: 1px solid #1e1e2e; border-radius: 99px; background: #13131f;
-        }
-        .db-source-text { font-size: 12px; color: #6b6b8a; }
-        .db-read-link { font-size: 12px; color: #06b6d4; text-decoration: none; margin-left: auto; }
-        .db-read-link:hover { text-decoration: underline; }
-        .db-map-btn {
-          padding: 5px 12px; background: #06b6d4; color: #0d0d14;
-          border: none; border-radius: 6px; font-size: 12px; font-weight: 600;
-          font-family: 'Inter', sans-serif; cursor: pointer; transition: opacity 0.15s;
-        }
-        .db-map-btn:hover { opacity: 0.85; }
-
-        /* DETAIL CARDS */
-        .db-detail-card {
-          background: #13131f; border: 1px solid #1e1e2e;
-          border-radius: 12px; padding: 20px; margin-bottom: 16px;
-        }
-        .db-detail-card:last-child { margin-bottom: 0; }
-        .db-card-heading {
-          font-size: 12px; font-weight: 600; text-transform: uppercase;
-          letter-spacing: 1px; color: #6b6b8a; margin-bottom: 14px;
-        }
-
-        /* SUMMARY */
-        .db-summary-item { display: flex; gap: 10px; margin-bottom: 10px; align-items: flex-start; }
-        .db-summary-item:last-child { margin-bottom: 0; }
-        .db-summary-num {
-          width: 20px; height: 20px; border-radius: 50%;
-          background: rgba(6,182,212,0.15); color: #06b6d4;
-          font-size: 10px; font-weight: 700; display: flex;
-          align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
-        }
-        .db-summary-text { font-size: 14px; color: #e8e8f0; line-height: 1.6; }
-
-        /* ACTION PLAN */
-        .db-action-row {
-          display: flex; gap: 10px; padding: 10px 14px;
-          border-radius: 8px; margin-bottom: 8px; align-items: flex-start;
-        }
-        .db-action-row:last-child { margin-bottom: 0; }
-        .db-action-now  { background: rgba(239,68,68,0.1);  border-left: 3px solid #ef4444; }
-        .db-action-30d  { background: rgba(245,158,11,0.1); border-left: 3px solid #f59e0b; }
-        .db-action-long { background: rgba(16,185,129,0.1); border-left: 3px solid #10b981; }
-        .db-action-badge {
-          font-size: 10px; font-weight: 700; padding: 2px 7px;
-          border-radius: 4px; color: #0d0d14; flex-shrink: 0; margin-top: 2px;
-        }
-        .db-action-text { font-size: 13px; color: #e8e8f0; line-height: 1.55; }
-
-        /* MARKET CARDS */
-        .db-market-card {
-          background: #13131f; border: 1px solid #1e1e2e;
-          border-radius: 12px; padding: 16px; transition: border-color 0.15s;
-        }
-        .db-market-card:hover { border-color: #06b6d4; }
-        .db-market-name  { font-size: 11px; color: #6b6b8a; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-        .db-market-price { font-size: 20px; font-weight: 700; color: #e8e8f0; margin-bottom: 4px; }
-        .db-market-up    { font-size: 13px; font-weight: 600; color: #06b6d4; }
-        .db-market-down  { font-size: 13px; font-weight: 600; color: #ef4444; }
-
-        /* STAT BOX */
-        .db-stat-box {
-          background: #13131f; border: 1px solid #1e1e2e;
-          border-radius: 12px; padding: 16px; flex: 1; text-align: center;
-        }
-        .db-stat-num   { font-size: 24px; font-weight: 700; color: #06b6d4; margin-bottom: 4px; }
-        .db-stat-label { font-size: 11px; color: #6b6b8a; }
-      `}</style>
 
       {/* NAVBAR */}
       <nav className="db-nav">
@@ -1737,60 +1565,11 @@ function Dashboard() {
         )}
       </div>
     )}
-      {showRiskOverlay && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0,
-          right: 0, bottom: 0,
-          background: 'rgba(13,13,20,0.95)',
-          zIndex: 2000,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: '32px'
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '52px', marginBottom: '16px' }}>
-              {RISK_STAGES[riskReportStage]?.icon}
-            </div>
-            <div style={{
-              color: '#e8e8f0', fontSize: '18px',
-              fontWeight: '600', marginBottom: '8px',
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              {RISK_STAGES[riskReportStage]?.label}
-            </div>
-            <div style={{ color: '#6b6b8a', fontSize: '13px' }}>
-              Generating Deloitte-style risk report...
-            </div>
-          </div>
-          <div style={{ width: '280px' }}>
-            <div style={{
-              background: '#1e1e2e', borderRadius: '4px',
-              height: '4px', overflow: 'hidden'
-            }}>
-              <div style={{
-                height: '100%',
-                background: '#7c3aed',
-                width: `${((riskReportStage + 1) / RISK_STAGES.length) * 100}%`,
-                transition: 'width 0.8s ease',
-                borderRadius: '4px'
-              }} />
-            </div>
-            <div style={{
-              color: '#6b6b8a', fontSize: '11px',
-              marginTop: '8px', textAlign: 'center',
-              fontFamily: 'Inter, sans-serif'
-            }}>
-              Step {riskReportStage + 1} of {RISK_STAGES.length}
-            </div>
-          </div>
-          <div style={{
-            color: '#6b6b8a', fontSize: '11px',
-            fontFamily: 'Inter, sans-serif'
-          }}>
-            This may take 15-25 seconds
-          </div>
-        </div>
-      )}
+      <RiskOverlay
+        show={showRiskOverlay}
+        stage={riskReportStage}
+        stages={RISK_STAGES}
+      />
     </>
   );
 }

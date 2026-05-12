@@ -70,3 +70,15 @@ export const generateRiskReport = async (article, lens) => {
   );
   return response.json();
 };
+
+export const checkSupplierRisk = async (article, supplier) => {
+  const response = await fetch(
+    'https://supplylens-backend.onrender.com/api/check-supplier',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ article, supplier })
+    }
+  );
+  return response.json();
+};
