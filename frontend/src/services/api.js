@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'https://supplylens-backend.onrender.com';
 
 export const fetchNews = async () => {
   const response = await fetch(`${BASE_URL}/api/news`);
@@ -19,13 +19,13 @@ export const fetchEconomicContext = async () => {
 };
 
 export const fetchNewsByIndustry = async (industry) => {
-  const response = await fetch(`http://localhost:3000/api/news/${industry}`);
+  const response = await fetch(`https://supplylens-backend.onrender.com/api/news/${industry}`);
   const data = await response.json();
   return data;
 };
 
 export const analyzeUrl = async (url, industry) => {
-  const response = await fetch('http://localhost:3000/api/analyze-url', {
+  const response = await fetch('https://supplylens-backend.onrender.com/api/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, industry })
@@ -35,7 +35,7 @@ export const analyzeUrl = async (url, industry) => {
 };
 
 export const analyzeArticleWithLens = async (article, industry) => {
-  const response = await fetch('http://localhost:3000/api/analyze-article', {
+  const response = await fetch('https://supplylens-backend.onrender.com/api/analyze-article', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ article, industry })
@@ -45,7 +45,7 @@ export const analyzeArticleWithLens = async (article, industry) => {
 };
 
 export const refreshNews = async () => {
-  const response = await fetch('http://localhost:3000/api/refresh', {
+  const response = await fetch('https://supplylens-backend.onrender.com/api/refresh', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
@@ -54,14 +54,14 @@ export const refreshNews = async () => {
 
 export const fetchHeadlines = async () => {
   const response = await fetch(
-    'http://localhost:3000/api/headlines'
+    'https://supplylens-backend.onrender.com/api/headlines'
   );
   return response.json();
 };
 
 export const generateRiskReport = async (article, lens) => {
   const response = await fetch(
-    'http://localhost:3000/api/risk-report',
+    'https://supplylens-backend.onrender.com/api/risk-report',
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
