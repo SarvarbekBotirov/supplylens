@@ -409,9 +409,9 @@ function LandingPage() {
             lineHeight: '1.7', maxWidth: '480px',
             margin: '0 auto',
           }}>
-            AI-powered supply chain intelligence.
-            Real news, live market data,
-            procurement-ready analysis — in seconds.
+            A procurement risk intelligence system that converts
+            global news and commodity signals into
+            supplier-risk actions.
           </p>
         </div>
 
@@ -439,7 +439,7 @@ function LandingPage() {
         display: 'flex', alignItems: 'center', gap: '24px',
       }}>
         {['10+ Live Sources', 'Source-Grounded Analysis',
-          'Procurement Intelligence'].map((item, i) => (
+          'Supplier Risk Actions'].map((item, i) => (
           <div key={i} style={{
             display: 'flex', alignItems: 'center', gap: '6px',
           }}>
