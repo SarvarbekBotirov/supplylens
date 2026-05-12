@@ -1,6 +1,6 @@
 # SupplyLens 🔍
 
-> AI-powered supply chain intelligence. Real news, live market data, procurement-ready analysis — in seconds.
+> A procurement risk intelligence system that converts global news and commodity signals into supplier-risk actions.
 
 **Live Demo:** [supplylens-lilac.vercel.app](https://supplylens-lilac.vercel.app)
 
@@ -8,9 +8,9 @@
 
 ## What is SupplyLens?
 
-SupplyLens monitors live supply chain news from 10+ industry sources, analyzes each article using Claude AI with real commodity prices and economic data, and delivers structured intelligence tailored to your industry role.
+SupplyLens monitors live supply chain news from 10+ industry sources, analyzes each article against real commodity prices and economic data, and delivers structured supplier-risk intelligence tailored to your procurement role.
 
-Built for supply chain professionals, procurement managers, and analysts who need to act on breaking news — not react to it hours later.
+Built for procurement managers and supply chain analysts who need to convert breaking news into sourcing decisions — not react to disruptions after they happen.
 
 ---
 
@@ -19,7 +19,7 @@ Built for supply chain professionals, procurement managers, and analysts who nee
 **🔴 Live Intelligence Feed**
 
 - Fetches and analyzes articles from 10+ RSS sources in real time
-- Full article text fetched before analysis — zero hallucination
+- Full article text fetched before analysis — source-grounded, not headline-based
 - Every summary point shows exact source quote from the article
 
 **🎯 Industry Lens System**
