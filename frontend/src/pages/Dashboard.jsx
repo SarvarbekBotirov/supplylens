@@ -39,6 +39,14 @@ function Dashboard() {
   const [riskReportLoading, setRiskReportLoading] = useState(false);
   const [riskReportStage, setRiskReportStage] = useState(0);
   const [showRiskOverlay, setShowRiskOverlay] = useState(false);
+  const [showSupplierMonitor, setShowSupplierMonitor] = useState(false);
+  const [suppliers, setSuppliers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('supplylens_suppliers');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [supplierAlerts, setSupplierAlerts] = useState({});
 
 
   useEffect(() => {
@@ -184,9 +192,52 @@ function Dashboard() {
     }
   };
 
+  const checkArticleAgainstSuppliers = async (article) => {
+    if (!suppliers.length || !article) return;
+    const articleKey = article.link || article.title;
+
+    const articleText = (
+      article.title + ' ' +
+      (article.article_summary || '') + ' ' +
+      (article.summary?.join(' ') || '')
+    ).toLowerCase();
+
+    const potentialMatches = suppliers.filter(s => {
+      const countries = s.countries.toLowerCase()
+        .split(',').map(c => c.trim());
+      const materials = s.materials.toLowerCase()
+        .split(',').map(m => m.trim());
+      return countries.some(c => c && articleText.includes(c)) ||
+        materials.some(m => m && articleText.includes(m)) ||
+        articleText.includes(s.name.toLowerCase());
+    });
+
+    if (!potentialMatches.length) return;
+
+    const alerts = {};
+    for (const supplier of potentialMatches) {
+      try {
+        const result = await checkSupplierRisk(article, supplier);
+        if (result?.data?.affected) {
+          alerts[supplier.name] = result.data;
+        }
+      } catch (err) {
+        console.error('Supplier check failed:', err);
+      }
+    }
+
+    if (Object.keys(alerts).length > 0) {
+      setSupplierAlerts(prev => ({
+        ...prev,
+        [articleKey]: alerts
+      }));
+    }
+  };
+
   const handleArticleSelect = (article) => {
     setSelectedLens('General');
     setSelectedArticle(article);
+    checkArticleAgainstSuppliers(article);
   };
 
   const tagDot   = (tag) => TAG_DOT[tag]        || TAG_DOT.default;
@@ -221,6 +272,13 @@ function Dashboard() {
           <span className="db-nav-logo">SupplyLens</span>
           <span className="db-nav-badge">Beta</span>
         </div>
+        <button
+          className="db-home-btn"
+          onClick={() => setShowSupplierMonitor(true)}
+          style={{ marginRight: '8px' }}
+        >
+          🏭 Suppliers
+        </button>
         <button className="db-home-btn" onClick={() => navigate('/')}>← Home</button>
       </nav>
 
@@ -362,6 +420,30 @@ function Dashboard() {
                 <div className="db-progress-wrap">
                   <div className="db-progress-fill" style={{ width: `${pct}%` }} />
                 </div>
+                {(() => {
+                  const articleKey = article.link || article.title;
+                  const hasAlert = supplierAlerts[articleKey] &&
+                    Object.keys(supplierAlerts[articleKey]).length > 0;
+                  if (!hasAlert) return null;
+                  return (
+                    <div style={{
+                      display: 'flex', alignItems: 'center',
+                      gap: '5px', marginTop: '6px',
+                    }}>
+                      <span style={{
+                        width: '6px', height: '6px',
+                        borderRadius: '50%', background: '#f59e0b',
+                        display: 'inline-block',
+                      }} />
+                      <span style={{
+                        fontSize: '10px', color: '#f59e0b',
+                        fontWeight: '600',
+                      }}>
+                        Supplier affected
+                      </span>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
@@ -950,6 +1032,84 @@ function Dashboard() {
             <div style={{ width: '100%', maxWidth: '960px', padding: '24px 32px' }}>
               <div style={{ minHeight: '100%', paddingBottom: '60px' }}>
 
+              {(() => {
+                const articleKey = selectedArticle.link ||
+                  selectedArticle.title;
+                const alerts = supplierAlerts[articleKey];
+                if (!alerts || Object.keys(alerts).length === 0)
+                  return null;
+                return (
+                  <div style={{
+                    background: 'rgba(245,158,11,0.08)',
+                    border: '1px solid rgba(245,158,11,0.4)',
+                    borderLeft: '4px solid #f59e0b',
+                    borderRadius: '0 8px 8px 0',
+                    padding: '14px 16px',
+                    marginBottom: '16px',
+                  }}>
+                    <div style={{
+                      fontSize: '10px', fontWeight: '700',
+                      color: '#f59e0b', letterSpacing: '1.5px',
+                      textTransform: 'uppercase', marginBottom: '10px',
+                      display: 'flex', alignItems: 'center', gap: '8px',
+                    }}>
+                      <span style={{
+                        width: '8px', height: '8px',
+                        borderRadius: '50%', background: '#f59e0b',
+                        display: 'inline-block',
+                      }} />
+                      Supplier Alert
+                    </div>
+                    {Object.entries(alerts).map(([name, data]) => (
+                      <div key={name} style={{ marginBottom: '10px' }}>
+                        <div style={{
+                          fontSize: '13px', fontWeight: '700',
+                          color: '#e8e8f0', marginBottom: '6px',
+                        }}>
+                          ⚠️ {name}
+                          <span style={{
+                            marginLeft: '8px', fontSize: '10px',
+                            fontWeight: '700', padding: '2px 8px',
+                            borderRadius: '3px',
+                            background: data.risk_level === 'HIGH'
+                              ? 'rgba(239,68,68,0.15)'
+                              : 'rgba(245,158,11,0.15)',
+                            color: data.risk_level === 'HIGH'
+                              ? '#ef4444' : '#f59e0b',
+                          }}>
+                            {data.risk_level} RISK
+                          </span>
+                        </div>
+                        {data.reasons.map((reason, i) => (
+                          <div key={i} style={{
+                            display: 'flex', gap: '8px',
+                            fontSize: '12px', color: '#a0a0b8',
+                            lineHeight: '1.5', marginBottom: '4px',
+                          }}>
+                            <span style={{
+                              color: '#f59e0b', flexShrink: 0
+                            }}>→</span>
+                            <span>{reason}</span>
+                          </div>
+                        ))}
+                        {data.recommended_action && (
+                          <div style={{
+                            marginTop: '8px',
+                            background: 'rgba(6,182,212,0.08)',
+                            border: '1px solid rgba(6,182,212,0.2)',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            fontSize: '12px', color: '#06b6d4',
+                            lineHeight: '1.5',
+                          }}>
+                            💡 {data.recommended_action}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
               <h2 className="db-article-title">{selectedArticle.title}</h2>
 
               <div className="db-meta-row">
@@ -1406,6 +1566,11 @@ function Dashboard() {
         show={showRiskOverlay}
         stage={riskReportStage}
         stages={RISK_STAGES}
+      />
+      <SupplierMonitor
+        isOpen={showSupplierMonitor}
+        onClose={() => setShowSupplierMonitor(false)}
+        onProfileChange={(updated) => setSuppliers(updated)}
       />
     </>
   );
