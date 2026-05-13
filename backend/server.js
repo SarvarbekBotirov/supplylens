@@ -829,6 +829,88 @@ app.get('/api/headlines', async (_req, res) => {
   }
 });
 
+app.post('/api/check-supplier', async (req, res) => {
+  try {
+    const { article, supplier } = req.body;
+    if (!article || !supplier) {
+      return res.status(400).json({
+        success: false, error: 'Article and supplier required'
+      });
+    }
+
+    const content = article.full_text
+      || article.description
+      || article.article_summary
+      || '';
+
+    const prompt = `You are a procurement risk analyst.
+
+A procurement manager tracks this supplier:
+Supplier: ${supplier.name}
+Country exposure: ${supplier.countries}
+Materials/components: ${supplier.materials}
+Transport mode: ${supplier.transport}
+
+This news article was just published:
+Title: "${article.title}"
+Content: ${content.substring(0, 1500)}
+
+Does this article present a risk to this specific supplier?
+
+Respond with ONLY valid JSON:
+{
+  "affected": true or false,
+  "risk_level": "HIGH|MEDIUM|LOW|NONE",
+  "reasons": [
+    "specific reason 1 — must reference article content",
+    "specific reason 2 — must reference article content"
+  ],
+  "recommended_action": "one specific action for this procurement manager to take right now regarding this supplier"
+}
+
+STRICT RULES:
+- affected: true only if there is a genuine connection
+- reasons: must be specific to this supplier and this article
+- Never invent connections that are not in the article
+- If no real connection exists, return affected: false
+- reasons array: 1-3 items maximum
+- If affected is false, reasons should be empty array []`;
+
+    const response = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [{ role: 'user', content: prompt }]
+      },
+      {
+        headers: {
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json'
+        },
+        timeout: 15000
+      }
+    );
+
+    const responseText = response.data.content[0].text;
+    const cleanText = responseText
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
+      .trim();
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found');
+    const result = JSON.parse(jsonMatch[0]);
+
+    res.json({ success: true, data: result });
+  } catch (err) {
+    console.error('Supplier check error:', err.message);
+    res.status(500).json({
+      success: false, error: err.message
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
