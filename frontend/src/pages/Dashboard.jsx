@@ -217,7 +217,9 @@ function Dashboard() {
     const alerts = {};
     for (const supplier of potentialMatches) {
       try {
+        console.log('Checking supplier:', supplier.name, 'for article:', article.title);
         const result = await checkSupplierRisk(article, supplier);
+        console.log('Supplier check result:', result);
         if (result?.data?.affected) {
           alerts[supplier.name] = result.data;
         }
