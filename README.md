@@ -35,6 +35,14 @@ Built for procurement managers and supply chain analysts who need to convert bre
 - Action plan: NOW / 30D / LONG TERM
 - Live commodity market signal connected to the article
 
+**🏭 Supplier Monitor — Personalized Risk Alerts**
+
+- Add up to 5 key suppliers with country exposure, materials and transport mode
+- Every article automatically checked against your supplier profile using Claude AI
+- Personalized alert banner shows exactly why an article affects your specific supplier
+- Grounded in article facts — not generic warnings
+- Example: SK Hynix (China/Taiwan, DRAM/NAND) → Trump tariff article → instant supplier-specific risk assessment with recommended procurement action
+
 **🔗 URL Analyzer**
 
 - Paste any news URL for instant supply chain analysis
@@ -100,6 +108,8 @@ npm start
 | Lens re-analysis                            | Better UX than separate industry feeds                  |
 | Haiku for analysis, Sonnet for risk reports | Cost optimization without quality loss                  |
 | News rotation                               | Refresh always delivers unseen articles                 |
+| Supplier monitoring                         | Personalized alerts vs generic news — procurement teams track specific suppliers |
+| Client-side supplier profiles               | localStorage — zero backend cost, instant persistence   |
 
 ---
 
