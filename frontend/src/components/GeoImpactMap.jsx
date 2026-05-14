@@ -12,114 +12,117 @@ function GeoImpactMap({ geoImpact, onClose }) {
 
   useEffect(() => {
     if (!geoImpact || mapInstanceRef.current) return;
-    const L = window.L;
-    if (!L) return;
 
-    const map = L.map(mapRef.current, { center: [20, 0], zoom: 2, zoomControl: true });
-    mapInstanceRef.current = map;
+    setTimeout(() => {
+      const L = window.L;
+      if (!L) return;
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO',
-      subdomains: 'abcd',
-      maxZoom: 19,
-    }).addTo(map);
+      const map = L.map(mapRef.current, { center: [20, 0], zoom: 2, zoomControl: true });
+      mapInstanceRef.current = map;
 
-    const allAffectedCountries = [...epicenter, ...highRisk, ...secondary];
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '© OpenStreetMap © CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
 
-    fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
-      .then(r => r.json())
-      .then(data => {
-        L.geoJSON(data, {
-          style: feature => {
-            const name = feature.properties?.ADMIN || feature.properties?.name || '';
-            if (!name) return { fillOpacity: 0, color: 'transparent', weight: 0 };
-            if (epicenter.some(c => name.toLowerCase().includes(c.toLowerCase())))
-              return { fillColor: '#ef4444', fillOpacity: 0.5, color: '#ef4444', weight: 1 };
-            if (highRisk.some(c => name.toLowerCase().includes(c.toLowerCase())))
-              return { fillColor: '#f97316', fillOpacity: 0.35, color: '#f97316', weight: 1 };
-            if (secondary.some(c => name.toLowerCase().includes(c.toLowerCase())))
-              return { fillColor: '#eab308', fillOpacity: 0.2, color: '#eab308', weight: 0.5 };
-            return { fillOpacity: 0, color: 'transparent', weight: 0 };
-          },
-          onEachFeature: (feature, layer) => {
-            const name = feature.properties?.ADMIN || feature.properties?.name || '';
-            if (!name) return;
-            let riskLevel = null;
-            if (epicenter.some(c => name.toLowerCase().includes(c.toLowerCase())))  riskLevel = 'Epicenter';
-            else if (highRisk.some(c => name.toLowerCase().includes(c.toLowerCase()))) riskLevel = 'High Risk';
-            else if (secondary.some(c => name.toLowerCase().includes(c.toLowerCase()))) riskLevel = 'Secondary Impact';
-            if (riskLevel) {
-              layer.bindPopup(
-                `<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5">
-                   <strong style="color:#0a0a0a">${name}</strong><br/>
-                   <span style="color:#6b7280">${riskLevel}</span>
-                 </div>`,
-                { closeButton: false, offset: [0, -4] }
-              );
-              layer.on('click', () => layer.openPopup());
-            }
-          },
-        }).addTo(map);
+      const allAffectedCountries = [...epicenter, ...highRisk, ...secondary];
+
+      fetch('https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson')
+        .then(r => r.json())
+        .then(data => {
+          L.geoJSON(data, {
+            style: feature => {
+              const name = feature.properties?.ADMIN || feature.properties?.name || '';
+              if (!name) return { fillOpacity: 0, color: 'transparent', weight: 0 };
+              if (epicenter.some(c => name.toLowerCase().includes(c.toLowerCase())))
+                return { fillColor: '#ef4444', fillOpacity: 0.5, color: '#ef4444', weight: 1 };
+              if (highRisk.some(c => name.toLowerCase().includes(c.toLowerCase())))
+                return { fillColor: '#f97316', fillOpacity: 0.35, color: '#f97316', weight: 1 };
+              if (secondary.some(c => name.toLowerCase().includes(c.toLowerCase())))
+                return { fillColor: '#eab308', fillOpacity: 0.2, color: '#eab308', weight: 0.5 };
+              return { fillOpacity: 0, color: 'transparent', weight: 0 };
+            },
+            onEachFeature: (feature, layer) => {
+              const name = feature.properties?.ADMIN || feature.properties?.name || '';
+              if (!name) return;
+              let riskLevel = null;
+              if (epicenter.some(c => name.toLowerCase().includes(c.toLowerCase())))  riskLevel = 'Epicenter';
+              else if (highRisk.some(c => name.toLowerCase().includes(c.toLowerCase()))) riskLevel = 'High Risk';
+              else if (secondary.some(c => name.toLowerCase().includes(c.toLowerCase()))) riskLevel = 'Secondary Impact';
+              if (riskLevel) {
+                layer.bindPopup(
+                  `<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5">
+                     <strong style="color:#0a0a0a">${name}</strong><br/>
+                     <span style="color:#6b7280">${riskLevel}</span>
+                   </div>`,
+                  { closeButton: false, offset: [0, -4] }
+                );
+                layer.on('click', () => layer.openPopup());
+              }
+            },
+          }).addTo(map);
+        });
+
+      // Port markers — circles
+      const portIcon = L.divIcon({
+        html: '<div style="width:10px;height:10px;background:#3b82f6;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 4px rgba(59,130,246,0.6)"></div>',
+        className: '',
+        iconAnchor: [5, 5],
       });
 
-    // Port markers — circles
-    const portIcon = L.divIcon({
-      html: '<div style="width:10px;height:10px;background:#3b82f6;border-radius:50%;border:2px solid #ffffff;box-shadow:0 0 4px rgba(59,130,246,0.6)"></div>',
-      className: '',
-      iconAnchor: [5, 5],
-    });
+      ports.forEach(port => {
+        L.marker([port.lat, port.lng], { icon: portIcon })
+          .bindPopup(
+            `<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5">
+               <strong style="color:#0a0a0a">🚢 ${port.name}</strong><br/>
+               <span style="color:#6b7280">${port.country}</span>
+             </div>`,
+            { closeButton: false, offset: [0, -4] }
+          )
+          .addTo(map);
+      });
 
-    ports.forEach(port => {
-      L.marker([port.lat, port.lng], { icon: portIcon })
-        .bindPopup(
-          `<div style="font-family:Inter,sans-serif;font-size:13px;line-height:1.5">
-             <strong style="color:#0a0a0a">🚢 ${port.name}</strong><br/>
-             <span style="color:#6b7280">${port.country}</span>
-           </div>`,
-          { closeButton: false, offset: [0, -4] }
+      // Disrupted routes
+      routes.forEach(route => {
+        L.polyline(
+          [[route.from.lat, route.from.lng], [route.to.lat, route.to.lng]],
+          { color: '#ef4444', weight: 2, dashArray: '6,6', opacity: 0.7 }
         )
-        .addTo(map);
-    });
+          .bindPopup(
+            `<div style="font-family:Inter,sans-serif;font-size:13px"><strong>⚠️ ${route.name}</strong></div>`,
+            { closeButton: false }
+          )
+          .addTo(map);
+      });
 
-    // Disrupted routes
-    routes.forEach(route => {
-      L.polyline(
-        [[route.from.lat, route.from.lng], [route.to.lat, route.to.lng]],
-        { color: '#ef4444', weight: 2, dashArray: '6,6', opacity: 0.7 }
-      )
-        .bindPopup(
-          `<div style="font-family:Inter,sans-serif;font-size:13px"><strong>⚠️ ${route.name}</strong></div>`,
-          { closeButton: false }
-        )
-        .addTo(map);
-    });
+      // Fit bounds
+      const allPoints = [
+        ...ports.map(p => [p.lat, p.lng]),
+        ...routes.flatMap(r => [[r.from.lat, r.from.lng], [r.to.lat, r.to.lng]]),
+      ];
+      if (allPoints.length > 0) map.fitBounds(allPoints, { padding: [40, 40] });
 
-    // Fit bounds
-    const allPoints = [
-      ...ports.map(p => [p.lat, p.lng]),
-      ...routes.flatMap(r => [[r.from.lat, r.from.lng], [r.to.lat, r.to.lng]]),
-    ];
-    if (allPoints.length > 0) map.fitBounds(allPoints, { padding: [40, 40] });
-
-    // Legend
-    const Legend = L.control({ position: 'bottomleft' });
-    Legend.onAdd = () => {
-      const div = L.DomUtil.create('div');
-      div.innerHTML = `
-        <div style="
-          background:rgba(10,10,10,0.82);backdrop-filter:blur(4px);
-          color:#ffffff;padding:8px 12px;border-radius:8px;
-          font-family:Inter,sans-serif;font-size:11px;line-height:1.8;
-          border:1px solid rgba(255,255,255,0.1);
-        ">
-          <div>🔴 Epicenter</div>
-          <div>🟠 High Risk</div>
-          <div>🟡 Secondary</div>
-          <div>🔵 Port</div>
-        </div>`;
-      return div;
-    };
-    Legend.addTo(map);
+      // Legend
+      const Legend = L.control({ position: 'bottomleft' });
+      Legend.onAdd = () => {
+        const div = L.DomUtil.create('div');
+        div.innerHTML = `
+          <div style="
+            background:rgba(10,10,10,0.82);backdrop-filter:blur(4px);
+            color:#ffffff;padding:8px 12px;border-radius:8px;
+            font-family:Inter,sans-serif;font-size:11px;line-height:1.8;
+            border:1px solid rgba(255,255,255,0.1);
+          ">
+            <div>🔴 Epicenter</div>
+            <div>🟠 High Risk</div>
+            <div>🟡 Secondary</div>
+            <div>🔵 Port</div>
+          </div>`;
+        return div;
+      };
+      Legend.addTo(map);
+    }, 100);
 
     return () => {
       if (mapInstanceRef.current) {
