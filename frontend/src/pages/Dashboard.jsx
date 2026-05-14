@@ -121,6 +121,7 @@ function Dashboard() {
       setTimeout(() => {
         setAnalyzerResult(response.data);
         setUrlLoading(false);
+        checkArticleAgainstSuppliers(response.data);
       }, 600);
     } catch (err) {
       clearTimeout(t1);
@@ -1352,9 +1353,9 @@ function Dashboard() {
       </div>
 
       {/* GEO MAP OVERLAY */}
-      {showMap && activeArticle?.geo_impact && (
+      {showMap && (
         <GeoImpactMap
-          geoImpact={activeArticle.geo_impact}
+          geoImpact={activeArticle?.geo_impact || {}}
           onClose={() => setShowMap(false)}
         />
       )}
